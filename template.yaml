@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: system_mcp deployed as AWS Lambda (MCP streamable-http)
+
+Globals:
+  Function:
+    Runtime: python3.14
+    Timeout: 30
+    MemorySize: 512
+    Architectures:
+      - x86_64
+
+Resources:
+  SystemMcpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: lambda_handler.handler
+      Description: MCP server that exposes system info tool
+  SystemMcpFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt SystemMcpFunction.Arn
+      AuthType: NONE
+      Cors:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+        AllowHeaders:
+          - content-type
+          - authorization
+          - x-amz-date
+          - x-amz-security-token
+          - x-api-key
+
+  SystemMcpFunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunctionUrl
+      FunctionName: !Ref SystemMcpFunction
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+  SystemMcpFunctionUrlInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SystemMcpFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
+Outputs:
+  FunctionUrl:
+    Description: Lambda Function URL base
+    Value: !GetAtt SystemMcpFunctionUrl.FunctionUrl
